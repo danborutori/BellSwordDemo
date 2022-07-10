@@ -15,10 +15,6 @@ namespace demo {
         })
     }
 
-    function blenderWattsToLumens(watt: number) {
-        return (683 * watt) / (4 * Math.PI);
-    }
-
     export class Main {
         static async create( canvas: HTMLCanvasElement ){
             const [sceneGltf, bellSword] = await Promise.all([
