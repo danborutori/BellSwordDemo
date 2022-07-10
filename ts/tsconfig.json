@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "ESNext",
+		"module": "none",
+		"moduleResolution": "classic",
+		"strict": true,
+		"accessorOptimization": true,
+		"reorderFiles": true,
+        "outFile": "../html/script/main.js",
+		"rootDir": "src",
+		"jsx": "react",
+		"removeComments": true
+    },
+    "include": [
+		"src/**/*.ts",
+		"src/**/*.tsx",
+		"types/**/*.d.ts",
+		"../node_modules/three/src/*.d.ts"
+	],	
+	"compileOnSave": true,
+	"buildOnSave": true
+}

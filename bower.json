@@ -1,0 +1,20 @@
+{
+  "name": "bellsword_demo",
+  "authors": [
+    "danborutori <danborutori@gmail.com>"
+  ],
+  "description": "",
+  "main": "",
+  "license": "MIT",
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "three.js": "https://github.com/mrdoob/three.js.git",
+  }
+}
