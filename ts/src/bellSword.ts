@@ -55,81 +55,76 @@ namespace demo {
 
     export class BellSword {
 
-        static create(): Promise<BellSword>{
-            const modelLoader = new THREE.GLTFLoader()
+        static async create(): Promise<BellSword>{
+            const gltf = await loadGltf("asset/bell_sword/bell_sword.gltf")
 
-            return new Promise( (resolve, reject)=>{
-                modelLoader.load( "asset/bell_sword/bell_sword.gltf", gltf=>{
+            const scene = gltf.scene as THREE.Scene
 
-                    const scene = gltf.scene as THREE.Scene
+            const swordMesh = scene.getObjectByName("bell_sword") as THREE.Mesh
 
-                    const swordMesh = scene.getObjectByName("bell_sword") as THREE.Mesh
+            const bigPathNodesL: THREE.Vector3[] = new Array(8)
+            const smallPathNodesL: THREE.Vector3[] = new Array(4)
+            for( let i=0; i<bigPathNodesL.length; i++ ){
+                const o = scene.getObjectByName(`path${i}`)!
+                swordMesh.remove( o )
+                bigPathNodesL[i] = o.position.clone()
+            }
+            for( let i=0; i<smallPathNodesL.length; i++ ){
+                const o = scene.getObjectByName(`paths${i+1}`)!
+                swordMesh.remove( o )
+                smallPathNodesL[i] = o.position.clone()
+            }
+            const bigPathNodesR = bigPathNodesL.map( v=>new THREE.Vector3(-v.x,v.y,v.z))
+            const smallPathNodesR = smallPathNodesL.map( v=>new THREE.Vector3(-v.x,v.y,v.z))
 
-                    const bigPathNodesL: THREE.Vector3[] = new Array(8)
-                    const smallPathNodesL: THREE.Vector3[] = new Array(4)
-                    for( let i=0; i<bigPathNodesL.length; i++ ){
-                        const o = scene.getObjectByName(`path${i}`)!
-                        swordMesh.remove( o )
-                        bigPathNodesL[i] = o.position.clone()
+            const coins: THREE.Mesh[] = new Array(5)
+            for( let i=0; i<coins.length; i++ ){
+                coins[i] = scene.getObjectByName(`coin_${i+1}`) as THREE.Mesh
+            }
+
+            const bones: THREE.Bone[] = new Array(21)
+            for( let i=0; i<bones.length; i++ ){
+                bones[i] = new THREE.Bone()
+                if( i>0 ){
+                    bones[0].add( bones[i])
+                }
+            }
+            const skeleton = new THREE.Skeleton(bones)
+
+            const mesh = new THREE.SkinnedMesh(
+                createGeometry(
+                    swordMesh.geometry,
+                    coins.map(c=>c.geometry)
+                ),
+                swordMesh.material
+            )
+            mesh.castShadow = true
+            mesh.receiveShadow = true
+            mesh.frustumCulled = true
+            mesh.bind( skeleton )
+
+            return new BellSword(
+                mesh,
+                skeleton.bones[0],
+                [
+                    {
+                        nodes: bigPathNodesL,
+                        bones: skeleton.bones.slice(1,6)
+                    },
+                    {
+                        nodes: bigPathNodesR,
+                        bones: skeleton.bones.slice(6,11)
+                    },
+                    {
+                        nodes: smallPathNodesL,
+                        bones: skeleton.bones.slice(11,16)
+                    },
+                    {
+                        nodes: smallPathNodesR,
+                        bones: skeleton.bones.slice(16,21)
                     }
-                    for( let i=0; i<smallPathNodesL.length; i++ ){
-                        const o = scene.getObjectByName(`paths${i+1}`)!
-                        swordMesh.remove( o )
-                        smallPathNodesL[i] = o.position.clone()
-                    }
-                    const bigPathNodesR = bigPathNodesL.map( v=>new THREE.Vector3(-v.x,v.y,v.z))
-                    const smallPathNodesR = smallPathNodesL.map( v=>new THREE.Vector3(-v.x,v.y,v.z))
-
-                    const coins: THREE.Mesh[] = new Array(5)
-                    for( let i=0; i<coins.length; i++ ){
-                        coins[i] = scene.getObjectByName(`coin_${i+1}`) as THREE.Mesh
-                    }
-
-                    const bones: THREE.Bone[] = new Array(21)
-                    for( let i=0; i<bones.length; i++ ){
-                        bones[i] = new THREE.Bone()
-                        if( i>0 ){
-                            bones[0].add( bones[i])
-                        }
-                    }
-                    const skeleton = new THREE.Skeleton(bones)
-
-                    const mesh = new THREE.SkinnedMesh(
-                        createGeometry(
-                            swordMesh.geometry,
-                            coins.map(c=>c.geometry)
-                        ),
-                        swordMesh.material
-                    )
-                    mesh.castShadow = true
-                    mesh.receiveShadow = true
-                    mesh.frustumCulled = true
-                    mesh.bind( skeleton )
-
-                    resolve( new BellSword(
-                        mesh,
-                        skeleton.bones[0],
-                        [
-                            {
-                                nodes: bigPathNodesL,
-                                bones: skeleton.bones.slice(1,6)
-                            },
-                            {
-                                nodes: bigPathNodesR,
-                                bones: skeleton.bones.slice(6,11)
-                            },
-                            {
-                                nodes: smallPathNodesL,
-                                bones: skeleton.bones.slice(11,16)
-                            },
-                            {
-                                nodes: smallPathNodesR,
-                                bones: skeleton.bones.slice(16,21)
-                            }
-                        ]
-                    ))
-                }, undefined, e=>reject(e) )
-            })
+                ]
+            )
         }
 
         private paths: {

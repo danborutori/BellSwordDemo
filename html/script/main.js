@@ -73,63 +73,59 @@ var demo;
                 };
             });
         }
-        static create() {
-            const modelLoader = new THREE.GLTFLoader();
-            return new Promise((resolve, reject) => {
-                modelLoader.load("asset/bell_sword/bell_sword.gltf", gltf => {
-                    const scene = gltf.scene;
-                    const swordMesh = scene.getObjectByName("bell_sword");
-                    const bigPathNodesL = new Array(8);
-                    const smallPathNodesL = new Array(4);
-                    for (let i = 0; i < bigPathNodesL.length; i++) {
-                        const o = scene.getObjectByName(`path${i}`);
-                        swordMesh.remove(o);
-                        bigPathNodesL[i] = o.position.clone();
-                    }
-                    for (let i = 0; i < smallPathNodesL.length; i++) {
-                        const o = scene.getObjectByName(`paths${i + 1}`);
-                        swordMesh.remove(o);
-                        smallPathNodesL[i] = o.position.clone();
-                    }
-                    const bigPathNodesR = bigPathNodesL.map(v => new THREE.Vector3(-v.x, v.y, v.z));
-                    const smallPathNodesR = smallPathNodesL.map(v => new THREE.Vector3(-v.x, v.y, v.z));
-                    const coins = new Array(5);
-                    for (let i = 0; i < coins.length; i++) {
-                        coins[i] = scene.getObjectByName(`coin_${i + 1}`);
-                    }
-                    const bones = new Array(21);
-                    for (let i = 0; i < bones.length; i++) {
-                        bones[i] = new THREE.Bone();
-                        if (i > 0) {
-                            bones[0].add(bones[i]);
-                        }
-                    }
-                    const skeleton = new THREE.Skeleton(bones);
-                    const mesh = new THREE.SkinnedMesh(createGeometry(swordMesh.geometry, coins.map(c => c.geometry)), swordMesh.material);
-                    mesh.castShadow = true;
-                    mesh.receiveShadow = true;
-                    mesh.frustumCulled = true;
-                    mesh.bind(skeleton);
-                    resolve(new BellSword(mesh, skeleton.bones[0], [
-                        {
-                            nodes: bigPathNodesL,
-                            bones: skeleton.bones.slice(1, 6)
-                        },
-                        {
-                            nodes: bigPathNodesR,
-                            bones: skeleton.bones.slice(6, 11)
-                        },
-                        {
-                            nodes: smallPathNodesL,
-                            bones: skeleton.bones.slice(11, 16)
-                        },
-                        {
-                            nodes: smallPathNodesR,
-                            bones: skeleton.bones.slice(16, 21)
-                        }
-                    ]));
-                }, undefined, e => reject(e));
-            });
+        static async create() {
+            const gltf = await demo.loadGltf("asset/bell_sword/bell_sword.gltf");
+            const scene = gltf.scene;
+            const swordMesh = scene.getObjectByName("bell_sword");
+            const bigPathNodesL = new Array(8);
+            const smallPathNodesL = new Array(4);
+            for (let i = 0; i < bigPathNodesL.length; i++) {
+                const o = scene.getObjectByName(`path${i}`);
+                swordMesh.remove(o);
+                bigPathNodesL[i] = o.position.clone();
+            }
+            for (let i = 0; i < smallPathNodesL.length; i++) {
+                const o = scene.getObjectByName(`paths${i + 1}`);
+                swordMesh.remove(o);
+                smallPathNodesL[i] = o.position.clone();
+            }
+            const bigPathNodesR = bigPathNodesL.map(v => new THREE.Vector3(-v.x, v.y, v.z));
+            const smallPathNodesR = smallPathNodesL.map(v => new THREE.Vector3(-v.x, v.y, v.z));
+            const coins = new Array(5);
+            for (let i = 0; i < coins.length; i++) {
+                coins[i] = scene.getObjectByName(`coin_${i + 1}`);
+            }
+            const bones = new Array(21);
+            for (let i = 0; i < bones.length; i++) {
+                bones[i] = new THREE.Bone();
+                if (i > 0) {
+                    bones[0].add(bones[i]);
+                }
+            }
+            const skeleton = new THREE.Skeleton(bones);
+            const mesh = new THREE.SkinnedMesh(createGeometry(swordMesh.geometry, coins.map(c => c.geometry)), swordMesh.material);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.frustumCulled = true;
+            mesh.bind(skeleton);
+            return new BellSword(mesh, skeleton.bones[0], [
+                {
+                    nodes: bigPathNodesL,
+                    bones: skeleton.bones.slice(1, 6)
+                },
+                {
+                    nodes: bigPathNodesR,
+                    bones: skeleton.bones.slice(6, 11)
+                },
+                {
+                    nodes: smallPathNodesL,
+                    bones: skeleton.bones.slice(11, 16)
+                },
+                {
+                    nodes: smallPathNodesR,
+                    bones: skeleton.bones.slice(16, 21)
+                }
+            ]);
         }
         simulate(deltaTime) {
             m1.copy(this.object3D.matrixWorld).invert();
@@ -191,65 +187,61 @@ var demo;
 var demo;
 (function (demo) {
     const e = new THREE.Euler;
-    function createScene() {
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera();
-        const material = new THREE.MeshStandardMaterial({
-            side: THREE.FrontSide,
-            shadowSide: THREE.BackSide
+    const flipQ = new THREE.Quaternion().setFromEuler(e.set(0, Math.PI, 0));
+    function loadGltf(url) {
+        return new Promise((resolve, reject) => {
+            new THREE.GLTFLoader().load(url, gltf => {
+                resolve(gltf);
+            }, undefined, e => reject(e));
         });
-        const floor = new THREE.Mesh(new THREE.PlaneBufferGeometry(100, 100).rotateX(-Math.PI / 2), material);
-        floor.castShadow = true;
-        floor.receiveShadow = true;
-        const light = new THREE.SpotLight();
-        light.castShadow = true;
-        light.angle = Math.PI / 12;
-        light.penumbra = 0.5;
-        scene.add(camera);
-        scene.add(floor);
-        scene.add(light);
-        camera.position.set(0, 1, -0.5);
-        camera.lookAt(0, 0.5, 0);
-        light.position.set(1, 3, -2);
-        light.lookAt(0, 0.5, 0);
-        return {
-            scene: scene,
-            camera: camera
-        };
+    }
+    demo.loadGltf = loadGltf;
+    function blenderWattsToLumens(watt) {
+        return (683 * watt) / (4 * Math.PI);
     }
     class Main {
-        constructor(canvas) {
+        constructor(canvas, scene, camera, pivot, bellSword) {
+            this.scene = scene;
+            this.camera = camera;
+            this.pivot = pivot;
+            this.bellSword = bellSword;
             this.animationFrameRequest = -1;
-            this.pivot = new THREE.Object3D;
             this.time = 0;
             this.renderer = new THREE.WebGLRenderer({
                 canvas: canvas
             });
+            this.renderer.physicallyCorrectLights = true;
             this.renderer.shadowMap.enabled = true;
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            this.renderer.setClearColor(new THREE.Color(0, 0, 0));
-            const s = createScene();
-            this.scene = s.scene;
-            this.camera = s.camera;
-            this.pivot.position.set(0, 0.5, 0);
-            this.scene.add(this.pivot);
+            this.renderer.setClearColor(new THREE.Color(0.5, 0.5, 0.5));
             window.addEventListener("resize", () => this.onResize());
+        }
+        static async create(canvas) {
+            const [sceneGltf, bellSword] = await Promise.all([
+                loadGltf("asset/scene/scene.gltf"),
+                demo.BellSword.create()
+            ]);
+            const scene = sceneGltf.scene;
+            scene.updateMatrixWorld(true);
+            const camera = sceneGltf.cameras[0];
+            const pivot = scene.getObjectByName("pivot");
+            const light1 = scene.getObjectByName("Light1").children[0];
+            const light2 = scene.getObjectByName("Light2").children[0];
+            light1.intensity /= 2;
+            light2.intensity /= 2;
+            bellSword.object3D.position.set(0, -0.1, 0);
+            pivot.add(bellSword.object3D);
+            return new Main(canvas, scene, camera, pivot, bellSword);
         }
         init() {
             this.onResize();
             this.start();
-            demo.BellSword.create().then(bs => {
-                bs.object3D.position.set(0, -0.1, 0);
-                this.pivot.add(bs.object3D);
-                this.bellSword = bs;
-            });
         }
         update(deltaTime) {
             this.time += deltaTime;
             this.pivot.quaternion.setFromEuler(e.set(this.time * Math.PI * 2 / 3, 0, this.time * Math.PI * 2 / 5));
-            if (this.bellSword) {
-                this.bellSword.update(deltaTime);
-            }
+            this.scene.updateMatrixWorld(true);
+            this.bellSword.update(deltaTime);
         }
         render(deltaTime) {
             this.animationFrameRequest = requestAnimationFrame(() => {

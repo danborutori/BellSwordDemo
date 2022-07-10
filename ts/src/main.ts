@@ -2,71 +2,77 @@ namespace demo {
 
     const e = new THREE.Euler
 
-    function createScene(){
-        const scene = new THREE.Scene()
-        const camera = new THREE.PerspectiveCamera()
-        const material = new THREE.MeshStandardMaterial({
-            side: THREE.FrontSide,
-            shadowSide: THREE.BackSide
+    const flipQ = new THREE.Quaternion().setFromEuler( e.set(0,Math.PI, 0))
+
+    export function loadGltf( url: string ){
+        return new Promise<{
+            scene: THREE.Scene
+            cameras: THREE.Camera[]
+        }>( (resolve, reject)=>{
+            new THREE.GLTFLoader().load( url, gltf=>{
+                resolve( gltf )
+            }, undefined, e=>reject(e))
         })
-        const floor = new THREE.Mesh( new THREE.PlaneBufferGeometry(100,100).rotateX(-Math.PI/2), material )
-        floor.castShadow = true
-        floor.receiveShadow = true
-        const light = new THREE.SpotLight()
-        light.castShadow = true
-        light.angle = Math.PI/12
-        light.penumbra = 0.5
+    }
 
-        scene.add( camera )
-        scene.add( floor )
-        scene.add( light )
-
-        camera.position.set( 0,1,-0.5 )
-        camera.lookAt( 0, 0.5, 0 )
-
-        light.position.set( 1, 3, -2 )
-        light.lookAt( 0, 0.5, 0 )
-
-        return {
-            scene: scene,
-            camera: camera
-        }
+    function blenderWattsToLumens(watt: number) {
+        return (683 * watt) / (4 * Math.PI);
     }
 
     export class Main {
+        static async create( canvas: HTMLCanvasElement ){
+            const [sceneGltf, bellSword] = await Promise.all([
+                loadGltf("asset/scene/scene.gltf"),
+                BellSword.create()
+            ])
+            
+            const scene = sceneGltf.scene
+            scene.updateMatrixWorld(true)
+            const camera = sceneGltf.cameras[0] as THREE.PerspectiveCamera
+            const pivot = scene.getObjectByName("pivot")!
+            const light1 = scene.getObjectByName("Light1")!.children[0] as THREE.SpotLight
+            const light2 = scene.getObjectByName("Light2")!.children[0] as THREE.SpotLight
+            // correct light intensity
+            light1.intensity /= 2
+            light2.intensity /= 2
+
+            bellSword.object3D.position.set(0,-0.1,0)
+            pivot.add( bellSword.object3D )
+
+            return new Main(
+                canvas,
+                scene,
+                camera,
+                pivot,
+                bellSword
+            )
+        }
+
         private renderer: THREE.WebGLRenderer
         private animationFrameRequest = -1
-        private scene: THREE.Scene
-        private camera: THREE.PerspectiveCamera
-        private pivot = new THREE.Object3D
-        private bellSword?: BellSword
         private time = 0
 
-        constructor( canvas: HTMLCanvasElement ){
+        constructor(
+            canvas: HTMLCanvasElement,
+            private scene: THREE.Scene,
+            private camera: THREE.PerspectiveCamera,
+            private pivot: THREE.Object3D,
+            private bellSword: BellSword
+        ){
             this.renderer = new THREE.WebGLRenderer({
                 canvas: canvas
             })
+            this.renderer.physicallyCorrectLights = true
             this.renderer.shadowMap.enabled = true
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
-            this.renderer.setClearColor(new THREE.Color(0,0,0))
+            this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.5))
 
-            const s = createScene()
-            this.scene = s.scene
-            this.camera = s.camera
-            this.pivot.position.set(0,0.5,0)
-            this.scene.add( this.pivot )
             window.addEventListener( "resize", ()=>this.onResize() )
         }
 
         init(){
             this.onResize()
             this.start()
-
-            BellSword.create().then( bs=>{
-                bs.object3D.position.set(0,-0.1,0)
-                this.pivot.add( bs.object3D )
-                this.bellSword = bs
-            } )
         }
 
         private update( deltaTime: number ){
@@ -77,10 +83,10 @@ namespace demo {
                 0,
                 this.time*Math.PI*2/5)
             )
+            this.scene.updateMatrixWorld(true)
 
-            if( this.bellSword ){
-                this.bellSword.update( deltaTime )
-            }
+            this.bellSword.update( deltaTime )
+
         }
 
         private render( deltaTime: number ){
