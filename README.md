@@ -11,7 +11,7 @@ https://rawcdn.githack.com/danborutori/BellSwordDemo/r1.0.0/html/index.html
 
 ## Authors
 
-[@ANMCダンボールとり](https://twitter.com/lamylanmc)
+[@ANMCダンボールとり](https://twitter.com/lamylanmc) <br />
 [@ダンボールとり](https://twitter.com/danborutori)
 
 ## Version History
