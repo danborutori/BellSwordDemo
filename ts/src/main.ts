@@ -2,8 +2,6 @@ namespace demo {
 
     const e = new THREE.Euler
 
-    const flipQ = new THREE.Quaternion().setFromEuler( e.set(0,Math.PI, 0))
-
     export function loadGltf( url: string ){
         return new Promise<{
             scene: THREE.Scene
