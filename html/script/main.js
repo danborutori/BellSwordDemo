@@ -190,6 +190,24 @@ var demo;
     function loadGltf(url) {
         return new Promise((resolve, reject) => {
             new THREE.GLTFLoader().load(url, gltf => {
+                gltf.scene.traverse(o => {
+                    const mesh = o;
+                    if (mesh.isMesh) {
+                        const mat = mesh.material;
+                        if (mat.isMeshStandardMaterial) {
+                            for (let t of [
+                                mat.map,
+                                mat.normalMap,
+                                mat.roughnessMap
+                            ]) {
+                                if (t) {
+                                    t.anisotropy = 4;
+                                    t.needsUpdate = true;
+                                }
+                            }
+                        }
+                    }
+                });
                 resolve(gltf);
             }, undefined, e => reject(e));
         });
@@ -204,11 +222,13 @@ var demo;
             this.animationFrameRequest = -1;
             this.time = 0;
             this.renderer = new THREE.WebGLRenderer({
-                canvas: canvas
+                canvas: canvas,
+                antialias: true
             });
             this.renderer.physicallyCorrectLights = true;
             this.renderer.shadowMap.enabled = true;
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            this.renderer.setPixelRatio(window.devicePixelRatio);
             this.renderer.setClearColor(new THREE.Color(0.5, 0.5, 0.5));
             const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement);
             orbitCtrl.minDistance = 0.5;

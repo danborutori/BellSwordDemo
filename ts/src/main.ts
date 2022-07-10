@@ -8,6 +8,26 @@ namespace demo {
             cameras: THREE.Camera[]
         }>( (resolve, reject)=>{
             new THREE.GLTFLoader().load( url, gltf=>{
+
+                (gltf.scene as THREE.Scene).traverse(o=>{
+                    const mesh = o as THREE.Mesh
+                    if( mesh.isMesh ){
+                        const mat = mesh.material as THREE.MeshStandardMaterial
+                        if( mat.isMeshStandardMaterial ){
+                            for( let t of [
+                                mat.map,
+                                mat.normalMap,
+                                mat.roughnessMap
+                            ]){
+                                if( t ){
+                                    t.anisotropy = 4
+                                    t.needsUpdate = true
+                                }
+                            }
+                        }
+                    }
+                })
+
                 resolve( gltf )
             }, undefined, e=>reject(e))
         })
@@ -59,11 +79,13 @@ namespace demo {
             private bellSword: BellSword
         ){
             this.renderer = new THREE.WebGLRenderer({
-                canvas: canvas
+                canvas: canvas,
+                antialias: true
             })
             this.renderer.physicallyCorrectLights = true
             this.renderer.shadowMap.enabled = true
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
+            this.renderer.setPixelRatio( window.devicePixelRatio )
             this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.5))
 
             const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement)
