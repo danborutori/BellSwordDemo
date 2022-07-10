@@ -67,7 +67,9 @@ namespace demo {
             this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.5))
 
             const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement)
-            orbitCtrl.update()
+            orbitCtrl.minDistance = 0.5
+            orbitCtrl.maxDistance = 2
+            orbitCtrl.update()            
 
             window.addEventListener( "resize", ()=>this.onResize() )
         }
@@ -81,9 +83,9 @@ namespace demo {
             this.time += deltaTime
 
             this.pivot.quaternion.setFromEuler( e.set(
-                this.time*Math.PI*2/3,
+                this.time*Math.PI*2/6,
                 0,
-                this.time*Math.PI*2/5)
+                this.time*Math.PI*2/10)
             )
             this.scene.updateMatrixWorld(true)
 
