@@ -51,7 +51,8 @@
                 1,
                 3,
                 5,
-                6
+                6,
+                7
             ]
         }
     ],
@@ -109,9 +110,9 @@
                 0.7804827094078064
             ],
             "translation" : [
-                1.0636022090911865,
-                1.2165182828903198,
-                1.0059210062026978
+                1.1871446371078491,
+                0.8308428525924683,
+                1.1544713973999023
             ]
         },
         {
@@ -146,12 +147,11 @@
             ]
         },
         {
-            "name" : "pivot",
-            "translation" : [
-                0,
-                0.5,
-                0
-            ]
+            "name" : "pivot"
+        },
+        {
+            "mesh" : 0,
+            "name" : "Sphere"
         }
     ],
     "cameras" : [
@@ -164,6 +164,101 @@
                 "znear" : 0.10000000149011612
             },
             "type" : "perspective"
+        }
+    ],
+    "materials" : [
+        {
+            "name" : "Material.001",
+            "pbrMetallicRoughness" : {
+                "baseColorFactor" : [
+                    0.800000011920929,
+                    0.800000011920929,
+                    0.800000011920929,
+                    1
+                ],
+                "metallicFactor" : 0,
+                "roughnessFactor" : 0.5
+            }
+        }
+    ],
+    "meshes" : [
+        {
+            "name" : "Sphere",
+            "primitives" : [
+                {
+                    "attributes" : {
+                        "POSITION" : 0,
+                        "NORMAL" : 1,
+                        "TEXCOORD_0" : 2
+                    },
+                    "indices" : 3,
+                    "material" : 0
+                }
+            ]
+        }
+    ],
+    "accessors" : [
+        {
+            "bufferView" : 0,
+            "componentType" : 5126,
+            "count" : 559,
+            "max" : [
+                8.644852638244629,
+                8.644856452941895,
+                8.644847869873047
+            ],
+            "min" : [
+                -8.64484977722168,
+                -8.644855499267578,
+                -8.644844055175781
+            ],
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 1,
+            "componentType" : 5126,
+            "count" : 559,
+            "type" : "VEC3"
+        },
+        {
+            "bufferView" : 2,
+            "componentType" : 5126,
+            "count" : 559,
+            "type" : "VEC2"
+        },
+        {
+            "bufferView" : 3,
+            "componentType" : 5123,
+            "count" : 2880,
+            "type" : "SCALAR"
+        }
+    ],
+    "bufferViews" : [
+        {
+            "buffer" : 0,
+            "byteLength" : 6708,
+            "byteOffset" : 0
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 6708,
+            "byteOffset" : 6708
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 4472,
+            "byteOffset" : 13416
+        },
+        {
+            "buffer" : 0,
+            "byteLength" : 5760,
+            "byteOffset" : 17888
+        }
+    ],
+    "buffers" : [
+        {
+            "byteLength" : 23648,
+            "uri" : "scene.bin"
         }
     ]
 }

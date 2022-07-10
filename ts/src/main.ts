@@ -23,12 +23,17 @@ namespace demo {
             const scene = sceneGltf.scene
             scene.updateMatrixWorld(true)
             const camera = sceneGltf.cameras[0] as THREE.PerspectiveCamera
+            scene.attach( camera )
             const pivot = scene.getObjectByName("pivot")!
             const light1 = scene.getObjectByName("Light1")!.children[0] as THREE.SpotLight
             const light2 = scene.getObjectByName("Light2")!.children[0] as THREE.SpotLight
             // correct light intensity
-            light1.intensity /= 2
-            light2.intensity /= 2
+            light1.castShadow = true
+            light1.intensity /= Math.PI/2
+            light2.castShadow = true
+            light2.intensity /= Math.PI/2
+            
+            scene.getObjectByName("Sphere")!.receiveShadow = true
 
             bellSword.object3D.position.set(0,-0.1,0)
             pivot.add( bellSword.object3D )
@@ -61,6 +66,9 @@ namespace demo {
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
             this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.5))
 
+            const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement)
+            orbitCtrl.update()
+
             window.addEventListener( "resize", ()=>this.onResize() )
         }
 
@@ -87,6 +95,7 @@ namespace demo {
             this.animationFrameRequest = requestAnimationFrame( ()=>{
                 this.animationFrameRequest = -1
 
+                this.camera.lookAt(0,0,0)
                 this.renderer.render( this.scene, this.camera )
             })
         }

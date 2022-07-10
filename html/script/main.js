@@ -187,7 +187,6 @@ var demo;
 var demo;
 (function (demo) {
     const e = new THREE.Euler;
-    const flipQ = new THREE.Quaternion().setFromEuler(e.set(0, Math.PI, 0));
     function loadGltf(url) {
         return new Promise((resolve, reject) => {
             new THREE.GLTFLoader().load(url, gltf => {
@@ -196,9 +195,6 @@ var demo;
         });
     }
     demo.loadGltf = loadGltf;
-    function blenderWattsToLumens(watt) {
-        return (683 * watt) / (4 * Math.PI);
-    }
     class Main {
         constructor(canvas, scene, camera, pivot, bellSword) {
             this.scene = scene;
@@ -214,6 +210,8 @@ var demo;
             this.renderer.shadowMap.enabled = true;
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             this.renderer.setClearColor(new THREE.Color(0.5, 0.5, 0.5));
+            const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement);
+            orbitCtrl.update();
             window.addEventListener("resize", () => this.onResize());
         }
         static async create(canvas) {
@@ -224,11 +222,15 @@ var demo;
             const scene = sceneGltf.scene;
             scene.updateMatrixWorld(true);
             const camera = sceneGltf.cameras[0];
+            scene.attach(camera);
             const pivot = scene.getObjectByName("pivot");
             const light1 = scene.getObjectByName("Light1").children[0];
             const light2 = scene.getObjectByName("Light2").children[0];
-            light1.intensity /= 2;
-            light2.intensity /= 2;
+            light1.castShadow = true;
+            light1.intensity /= Math.PI / 2;
+            light2.castShadow = true;
+            light2.intensity /= Math.PI / 2;
+            scene.getObjectByName("Sphere").receiveShadow = true;
             bellSword.object3D.position.set(0, -0.1, 0);
             pivot.add(bellSword.object3D);
             return new Main(canvas, scene, camera, pivot, bellSword);
@@ -246,6 +248,7 @@ var demo;
         render(deltaTime) {
             this.animationFrameRequest = requestAnimationFrame(() => {
                 this.animationFrameRequest = -1;
+                this.camera.lookAt(0, 0, 0);
                 this.renderer.render(this.scene, this.camera);
             });
         }
