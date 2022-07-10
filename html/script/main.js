@@ -211,6 +211,8 @@ var demo;
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             this.renderer.setClearColor(new THREE.Color(0.5, 0.5, 0.5));
             const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement);
+            orbitCtrl.minDistance = 0.5;
+            orbitCtrl.maxDistance = 2;
             orbitCtrl.update();
             window.addEventListener("resize", () => this.onResize());
         }
@@ -241,7 +243,7 @@ var demo;
         }
         update(deltaTime) {
             this.time += deltaTime;
-            this.pivot.quaternion.setFromEuler(e.set(this.time * Math.PI * 2 / 3, 0, this.time * Math.PI * 2 / 5));
+            this.pivot.quaternion.setFromEuler(e.set(this.time * Math.PI * 2 / 6, 0, this.time * Math.PI * 2 / 10));
             this.scene.updateMatrixWorld(true);
             this.bellSword.update(deltaTime);
         }
