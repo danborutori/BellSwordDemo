@@ -1,6 +1,7 @@
 namespace demo {
 
     const e = new THREE.Euler
+    const m = new THREE.Quaternion
 
     export function loadGltf( url: string ){
         return new Promise<{
@@ -68,8 +69,10 @@ namespace demo {
         }
 
         private renderer: THREE.WebGLRenderer
-        private animationFrameRequest = -1
         private time = 0
+        private arGroup = new THREE.Group
+        private arCamera = new THREE.PerspectiveCamera()
+        private arStarted = false
 
         constructor(
             canvas: HTMLCanvasElement,
@@ -80,18 +83,23 @@ namespace demo {
         ){
             this.renderer = new THREE.WebGLRenderer({
                 canvas: canvas,
-                antialias: true
+                antialias: true,
+                alpha: true
             })
             this.renderer.physicallyCorrectLights = true
             this.renderer.shadowMap.enabled = true
             this.renderer.shadowMap.type = THREE.PCFSoftShadowMap
             this.renderer.setPixelRatio( window.devicePixelRatio )
-            this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.5))
+            this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.5), 0)
+            this.renderer.xr.enabled = true
 
             const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement)
             orbitCtrl.minDistance = 0.5
             orbitCtrl.maxDistance = 2
-            orbitCtrl.update()            
+            orbitCtrl.update()
+
+            this.arGroup.add( this.arCamera )
+            this.scene.add( this.arGroup )
 
             window.addEventListener( "resize", ()=>this.onResize() )
         }
@@ -99,6 +107,37 @@ namespace demo {
         init(){
             this.onResize()
             this.start()
+
+            const arButton = new ARButton(
+                this.renderer,
+                ()=>{
+                    this.scene.getObjectByName("Sphere")!.visible = false
+                    this.arStarted = true
+                    this.camera.matrixWorld.decompose(this.arGroup.position, this.arGroup.quaternion, this.arGroup.scale)
+                    this.arCamera.position.setScalar(0)
+                    this.arCamera.quaternion.identity()
+                    this.arCamera.scale.setScalar(1)
+                },
+                ()=>{
+                    this.scene.getObjectByName("Sphere")!.visible = true
+                    this.arStarted = false
+                }
+            )
+
+            document.body.appendChild( arButton.htmlElement )
+            arButton.htmlElement.style.position = "absolute"
+            arButton.htmlElement.style.left = "50%"
+            arButton.htmlElement.style.top = "4"
+            arButton.htmlElement.style.transform = "translate( -50%, 0 )"
+
+            this.renderer.setAnimationLoop( ()=>{
+                if( this.arStarted ){
+                    this.renderer.render( this.scene, this.arCamera )
+                }else{
+                    this.camera.lookAt(0,0,0)
+                    this.renderer.render( this.scene, this.camera )
+                }
+            })
         }
 
         private update( deltaTime: number ){
@@ -115,32 +154,21 @@ namespace demo {
 
         }
 
-        private render( deltaTime: number ){
-            this.animationFrameRequest = requestAnimationFrame( ()=>{
-                this.animationFrameRequest = -1
-
-                this.camera.lookAt(0,0,0)
-                this.renderer.render( this.scene, this.camera )
-            })
-        }
-
         private start(){
             let prevTime = performance.now()
             setInterval( ()=>{
-                if( this.animationFrameRequest==-1 ){
-                    const curTime =  performance.now()
-                    const deltaTime = (curTime-prevTime)/1000
-                    this.update( deltaTime )
-                    this.render( deltaTime )
-                    prevTime = curTime
-                }
+                const curTime =  performance.now()
+                const deltaTime = (curTime-prevTime)/1000
+                this.update( deltaTime )
+                prevTime = curTime
             }, 10)
         }
 
         onResize(){
             this.renderer.domElement.width = window.innerWidth
             this.renderer.domElement.height = window.innerHeight
-            this.renderer.setSize( window.innerWidth, window.innerHeight )
+            if( !this.arStarted )
+                this.renderer.setSize( window.innerWidth, window.innerHeight )
             this.camera.aspect = window.innerWidth/window.innerHeight
             this.camera.updateProjectionMatrix()
         }
