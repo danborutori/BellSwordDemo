@@ -2,37 +2,34 @@ namespace demo {
 
     export class ARButton {
         readonly htmlElement = document.createElement( "input" )
-        private overlayRoot: HTMLElement
 
         private currentSession?: XRSession
 
         constructor(
             readonly renderer: THREE.WebGLRenderer,
+            readonly overlay: HTMLElement,
             private onSessionStart: ()=>void,
             private onSessionEnd: ()=>void
         ){
             this.htmlElement.type = "button"
-            if( navigator.xr )
-                this.htmlElement.value = "start AR"
-            else
-                this.htmlElement.value = "AR not supported"
+            this.htmlElement.value = "AR not supported"
+            this.htmlElement.disabled = true
+            navigator.xr && navigator.xr.isSessionSupported("immersive-ar").then(b=>{
+                if( b ){
+                    this.htmlElement.value = "start AR"
+                    this.htmlElement.disabled = false
+                }
+            })
 
             this.htmlElement.addEventListener( "click", ()=>{
-                this.startAr()
+                this.htmlElement.disabled = true
+                if( this.currentSession )
+                    this.endAr(false)
+                else
+                    this.startAr()
+                this.htmlElement.disabled = false
             })
 
-            const overlayRoot = document.createElement("div")
-            overlayRoot.style.display = "none"
-            const button = document.createElement("input")
-            button.type = "button"
-            button.value = "end AR"
-            button.addEventListener("click", ()=>{
-                this.endAr( false )
-            })
-            overlayRoot.appendChild(button)
-            document.body.appendChild(overlayRoot)
-            this.overlayRoot = overlayRoot
-        
         }
 
         private isRequesting = false
@@ -45,10 +42,9 @@ namespace demo {
                         const sessionInit = {
                             requiredFeatures: ["dom-overlay"],
                             domOverlay: {
-                                root: this.overlayRoot
+                                root: this.overlay
                             }
                         }
-                        this.overlayRoot.style.display = ""
                         this.currentSession = await navigator.xr.requestSession("immersive-ar", sessionInit)
                         this.currentSession.onend = ()=>{
                             this.endAr( true )
@@ -58,6 +54,8 @@ namespace demo {
                         await this.renderer.xr.setSession(this.currentSession)
 
                         this.onSessionStart()
+
+                        this.htmlElement.value = "end AR"
                     }catch(e){
                         console.error(e)
                     }finally{
@@ -75,8 +73,9 @@ namespace demo {
                     await this.currentSession.end()
                 this.onSessionEnd()
                 this.currentSession = undefined
-                this.overlayRoot.style.display = "none"
             }
+
+            this.htmlElement.value = "start AR"
         }
     }
 

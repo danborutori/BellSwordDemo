@@ -35,7 +35,7 @@ namespace demo {
     }
 
     export class Main {
-        static async create( canvas: HTMLCanvasElement ){
+        static async create( canvas: HTMLCanvasElement, hud: HTMLElement ){
             const [sceneGltf, bellSword] = await Promise.all([
                 loadGltf("asset/scene/scene.gltf"),
                 BellSword.create()
@@ -61,6 +61,7 @@ namespace demo {
 
             return new Main(
                 canvas,
+                hud,
                 scene,
                 camera,
                 pivot,
@@ -76,6 +77,7 @@ namespace demo {
 
         constructor(
             canvas: HTMLCanvasElement,
+            private hud: HTMLElement,
             private scene: THREE.Scene,
             private camera: THREE.PerspectiveCamera,
             private pivot: THREE.Object3D,
@@ -93,7 +95,7 @@ namespace demo {
             this.renderer.setClearColor(new THREE.Color(0.5,0.5,0.5), 0)
             this.renderer.xr.enabled = true
 
-            const orbitCtrl = new THREE.OrbitControls(camera, this.renderer.domElement)
+            const orbitCtrl = new THREE.OrbitControls(camera, this.hud)
             orbitCtrl.minDistance = 0.5
             orbitCtrl.maxDistance = 2
             orbitCtrl.update()
@@ -110,6 +112,7 @@ namespace demo {
 
             const arButton = new ARButton(
                 this.renderer,
+                this.hud,
                 ()=>{
                     this.scene.getObjectByName("Sphere")!.visible = false
                     this.arStarted = true
@@ -124,10 +127,11 @@ namespace demo {
                 }
             )
 
-            document.body.appendChild( arButton.htmlElement )
+            this.hud.appendChild( arButton.htmlElement )
+            arButton.htmlElement.style.padding = "5"
             arButton.htmlElement.style.position = "absolute"
             arButton.htmlElement.style.left = "50%"
-            arButton.htmlElement.style.top = "4"
+            arButton.htmlElement.style.top = "5"
             arButton.htmlElement.style.transform = "translate( -50%, 0 )"
 
             this.renderer.setAnimationLoop( ()=>{
