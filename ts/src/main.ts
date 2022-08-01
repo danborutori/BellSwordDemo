@@ -117,6 +117,7 @@ namespace demo {
                     this.scene.getObjectByName("Sphere")!.visible = false
                     this.arStarted = true
                     this.camera.matrixWorld.decompose(this.arGroup.position, this.arGroup.quaternion, this.arGroup.scale)
+                    this.arGroup.position.divideScalar(2)   // get closer
                     this.arCamera.position.setScalar(0)
                     this.arCamera.quaternion.identity()
                     this.arCamera.scale.setScalar(1)
