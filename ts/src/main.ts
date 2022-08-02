@@ -73,6 +73,7 @@ namespace demo {
         private time = 0
         private arGroup = new THREE.Group
         private arCamera = new THREE.PerspectiveCamera()
+        private arLight: THREE.Group
         private arStarted = false
 
         constructor(
@@ -100,6 +101,9 @@ namespace demo {
             orbitCtrl.maxDistance = 2
             orbitCtrl.update()
 
+
+            this.arLight = new THREE.XREstimatedLight( this.renderer )
+
             this.arGroup.add( this.arCamera )
             this.scene.add( this.arGroup )
 
@@ -114,7 +118,8 @@ namespace demo {
                 this.renderer,
                 this.hud,
                 ()=>{
-                    this.scene.getObjectByName("Sphere")!.visible = false
+                    this.scene.getObjectByName("notAr")!.visible = false
+                    this.scene.add(this.arLight)
                     this.arStarted = true
                     this.camera.matrixWorld.decompose(this.arGroup.position, this.arGroup.quaternion, this.arGroup.scale)
                     this.arGroup.position.divideScalar(2)   // get closer
@@ -123,7 +128,9 @@ namespace demo {
                     this.arCamera.scale.setScalar(1)
                 },
                 ()=>{
-                    this.scene.getObjectByName("Sphere")!.visible = true
+                    this.scene.remove(this.arLight)
+                    this.scene.getObjectByName("notAr")!.visible = true
+                    this.arGroup.visible = false
                     this.arStarted = false
                 }
             )

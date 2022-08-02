@@ -40,7 +40,7 @@ namespace demo {
                     this.isRequesting = true
                     try{
                         const sessionInit = {
-                            requiredFeatures: ["dom-overlay"],
+                            requiredFeatures: ["dom-overlay", "light-estimation"],
                             domOverlay: {
                                 root: this.overlay
                             }
