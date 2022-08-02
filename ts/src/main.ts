@@ -1,7 +1,7 @@
 namespace demo {
 
     const e = new THREE.Euler
-    const m = new THREE.Quaternion
+    const v1 = new THREE.Vector3
 
     export function loadGltf( url: string ){
         return new Promise<{
@@ -75,6 +75,7 @@ namespace demo {
         private arCamera = new THREE.PerspectiveCamera()
         private arLight: THREE.Group
         private arStarted = false
+        private arGroupPositionSet = 0
 
         constructor(
             canvas: HTMLCanvasElement,
@@ -121,6 +122,7 @@ namespace demo {
                     this.scene.getObjectByName("notAr")!.visible = false
                     this.scene.add(this.arLight)
                     this.arStarted = true
+                    this.arGroupPositionSet = 5
                     this.camera.matrixWorld.decompose(this.arGroup.position, this.arGroup.quaternion, this.arGroup.scale)
                     this.arGroup.position.divideScalar(2)   // get closer
                     this.arCamera.position.setScalar(0)
@@ -148,6 +150,13 @@ namespace demo {
                 }else{
                     this.camera.lookAt(0,0,0)
                     this.renderer.render( this.scene, this.camera )
+                }
+
+                if(this.arGroupPositionSet>0){
+                    v1.setFromMatrixColumn( this.arCamera.matrixWorld, 2 )
+                    this.arGroup.position.setFromMatrixPosition( this.bellSword.object3D.matrixWorld)
+                    .addScaledVector( v1, 0.3 )
+                    --this.arGroupPositionSet
                 }
             })
         }
