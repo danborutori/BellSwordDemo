@@ -7,7 +7,7 @@ Bell Sword Demo.
 Demo the physics simulation of a bell sword.
 
 ## Live Demo
-https://rawcdn.githack.com/danborutori/BellSwordDemo/r1.0.1/html/index.html
+https://rawcdn.githack.com/danborutori/BellSwordDemo/r1.0.2/html/index.html
 
 ## Authors
 
@@ -16,6 +16,8 @@ https://rawcdn.githack.com/danborutori/BellSwordDemo/r1.0.1/html/index.html
 
 ## Version History
 
+* 1.0.2
+    * add AR mode
 * 1.0.1
     * Update texture filter
     * Update render resolution on mobile device
