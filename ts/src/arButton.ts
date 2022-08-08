@@ -14,6 +14,8 @@ namespace demo {
             this.htmlElement.type = "button"
             this.htmlElement.value = "AR not supported"
             this.htmlElement.disabled = true
+            this.htmlElement.style.borderRadius = "12px"
+            this.htmlElement.style.margin = "5 5 5 5"
             navigator.xr && navigator.xr.isSessionSupported("immersive-ar").then(b=>{
                 if( b ){
                     this.htmlElement.value = "start AR"
