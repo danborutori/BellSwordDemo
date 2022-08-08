@@ -77,6 +77,8 @@ namespace demo {
         private arStarted = false
         private arGroupPositionSet = 0
 
+        private depthSense = new DepthSense()
+
         constructor(
             canvas: HTMLCanvasElement,
             private hud: HTMLElement,
@@ -106,9 +108,15 @@ namespace demo {
             this.arLight = new THREE.XREstimatedLight( this.renderer )
 
             this.arGroup.add( this.arCamera )
+            this.depthSense.mesh.position.set(0,0,-2)
+            this.arCamera.add( this.depthSense.mesh )
             this.scene.add( this.arGroup )
+            this.arGroup.visible = false
 
             window.addEventListener( "resize", ()=>this.onResize() )
+            hud.addEventListener("contextmenu", ()=>{
+                this.depthSense.mesh.material.colorWrite = !this.depthSense.mesh.material.colorWrite
+            })
         }
 
         init(){
@@ -121,6 +129,7 @@ namespace demo {
                 ()=>{
                     this.scene.getObjectByName("notAr")!.visible = false
                     this.scene.add(this.arLight)
+                    this.arGroup.visible = true
                     this.arStarted = true
                     this.arGroupPositionSet = 5
                     this.camera.matrixWorld.decompose(this.arGroup.position, this.arGroup.quaternion, this.arGroup.scale)
@@ -144,7 +153,10 @@ namespace demo {
             arButton.htmlElement.style.top = "5"
             arButton.htmlElement.style.transform = "translate( -50%, 0 )"
 
-            this.renderer.setAnimationLoop( ()=>{
+            this.renderer.setAnimationLoop( (_, frame)=>{
+                if( frame )
+                    this.depthSense.senseDepth(this.renderer, frame, this.arCamera)
+
                 if( this.arStarted ){
                     this.renderer.render( this.scene, this.arCamera )
                 }else{

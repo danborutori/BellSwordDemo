@@ -40,9 +40,13 @@ namespace demo {
                     this.isRequesting = true
                     try{
                         const sessionInit = {
-                            requiredFeatures: ["dom-overlay", "light-estimation"],
+                            requiredFeatures: ["dom-overlay", "light-estimation", "depth-sensing"],
                             domOverlay: {
                                 root: this.overlay
+                            },
+                            depthSensing: {
+                                usagePreference: ["cpu-optimized", "gpu-optimized"],
+                                dataFormatPreference: ["luminance-alpha"],
                             }
                         }
                         this.currentSession = await navigator.xr.requestSession("immersive-ar", sessionInit)
