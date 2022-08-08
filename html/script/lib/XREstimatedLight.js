@@ -4,6 +4,9 @@
 	const Group = THREE.Group
 	const LightProbe = THREE.LightProbe
 	const WebGLCubeRenderTarget = THREE.WebGLCubeRenderTarget
+
+	const v1 = new THREE.Vector3
+	const v2 = new THREE.Vector3
 	
 	class SessionLightProbe {
 
@@ -109,7 +112,8 @@
 					lightEstimate.primaryLightIntensity.y / intensityScalar,
 					lightEstimate.primaryLightIntensity.z / intensityScalar );
 				this.xrLight.directionalLight.intensity = intensityScalar;
-				this.xrLight.directionalLight.position.copy( lightEstimate.primaryLightDirection );
+				this.xrLight.directionalLight.position.copy(lightEstimate.primaryLightDirection).multiplyScalar(2)
+				this.xrLight.directionalLight.quaternion.setFromUnitVectors( v2.set(0,0,-1), lightEstimate.primaryLightDirection );
 
 				if ( this.estimationStartCallback ) {
 

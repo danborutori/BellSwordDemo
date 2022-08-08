@@ -17,7 +17,7 @@ namespace demo {
         getDepthInMeters(x: number, y: number): number
     } 
 
-    class DepthPlaneMaterial extends THREE.MeshBasicMaterial {
+    class DepthPlaneMaterial extends THREE.MeshStandardMaterial {
 
         readonly rawValueToMeters = { value: 1 }
         readonly cameraNear = { value: 1 }
@@ -60,6 +60,7 @@ namespace demo {
                     float viewDepth = cameraNear+texture2D( map, vUv ).r*rawValueToMeters;
                     
                     mvPosition.xyz *= abs(viewDepth/mvPosition.z);
+                    transformed = (inverse(modelViewMatrix)*mvPosition).xyz;
 
                     gl_Position = projectionMatrix * mvPosition;
                     `
@@ -97,6 +98,7 @@ namespace demo {
                 new THREE.PlaneBufferGeometry(1, 1, 200, 200),
                 new DepthPlaneMaterial( this.depthTexture )
             )
+            m.receiveShadow = true
             m.renderOrder = -1
             return m
         })()

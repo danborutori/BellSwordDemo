@@ -104,8 +104,15 @@ namespace demo {
             orbitCtrl.maxDistance = 2
             orbitCtrl.update()
 
-
             this.arLight = new THREE.XREstimatedLight( this.renderer )
+            const dirLit: THREE.DirectionalLight = this.arLight.directionalLight
+            dirLit.castShadow = true
+            dirLit.shadow.camera.near = 0.1
+            dirLit.shadow.camera.far = 5
+            dirLit.shadow.camera.left = -5
+            dirLit.shadow.camera.right = 5
+            dirLit.shadow.camera.top = 5
+            dirLit.shadow.camera.bottom = -5
 
             this.arGroup.add( this.arCamera )
             this.depthSense.mesh.position.set(0,0,-2)
