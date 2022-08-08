@@ -109,10 +109,11 @@ namespace demo {
             dirLit.castShadow = true
             dirLit.shadow.camera.near = 0.1
             dirLit.shadow.camera.far = 5
-            dirLit.shadow.camera.left = -5
-            dirLit.shadow.camera.right = 5
-            dirLit.shadow.camera.top = 5
-            dirLit.shadow.camera.bottom = -5
+            dirLit.shadow.camera.left = -1
+            dirLit.shadow.camera.right = 1
+            dirLit.shadow.camera.top = 1
+            dirLit.shadow.camera.bottom = -1
+            dirLit.shadow.mapSize.set(512,512)
 
             this.arGroup.add( this.arCamera )
             this.depthSense.mesh.position.set(0,0,-2)
@@ -121,9 +122,6 @@ namespace demo {
             this.arGroup.visible = false
 
             window.addEventListener( "resize", ()=>this.onResize() )
-            hud.addEventListener("contextmenu", ()=>{
-                this.depthSense.mesh.material.colorWrite = !this.depthSense.mesh.material.colorWrite
-            })
         }
 
         init(){
@@ -162,7 +160,7 @@ namespace demo {
 
             this.renderer.setAnimationLoop( (_, frame)=>{
                 if( frame )
-                    this.depthSense.senseDepth(this.renderer, frame, this.arCamera)
+                    this.depthSense.senseDepth(this.renderer, frame, this.arCamera, this.arLight.lightProbe)
 
                 if( this.arStarted ){
                     this.renderer.render( this.scene, this.arCamera )

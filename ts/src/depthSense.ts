@@ -2,6 +2,12 @@ namespace demo {
 
     const m = new THREE.Matrix4
     const v = new THREE.Vector3
+    const c = new THREE.Color
+    const hsl = {
+        h: 0,
+        s: 0,
+        l: 0
+    }
 
     interface XRDepthInformation {
         readonly width: number
@@ -17,17 +23,16 @@ namespace demo {
         getDepthInMeters(x: number, y: number): number
     } 
 
-    class DepthPlaneMaterial extends THREE.MeshStandardMaterial {
+    class DepthPlaneMaterial extends THREE.ShadowMaterial {
 
+        readonly tDepth: THREE.IUniform = { value: null }
         readonly rawValueToMeters = { value: 1 }
         readonly cameraNear = { value: 1 }
         
-        constructor( texture: THREE.DataTexture ){
+        constructor(){
             super({
-                map: texture,
                 side: THREE.FrontSide,
                 transparent: false,
-                colorWrite: false,
                 depthTest: true,
                 depthWrite: true
             })
@@ -37,27 +42,23 @@ namespace demo {
 
             this.onBeforeCompile = shader=>{
 
+                shader.uniforms.tDepth = this.tDepth
                 shader.uniforms.cameraNear = this.cameraNear
                 shader.uniforms.rawValueToMeters = this.rawValueToMeters
 
                 shader.vertexShader = `
-                    uniform sampler2D map;
+                    uniform sampler2D tDepth;
                     uniform float cameraNear;
                     uniform float rawValueToMeters;
 
-                    #include <packing>
+                    varying float vDepth;
                 `+shader.vertexShader.replace(
-                    "#include <uv_vertex>",
-                    `
-                    #include <uv_vertex>
-                    vUv = 1.0-vUv.yx;
-                    `
-                ).replace(
                     "#include <project_vertex>",
                     `
                     #include <project_vertex>
 
-                    float viewDepth = cameraNear+texture2D( map, vUv ).r*rawValueToMeters;
+                    float viewDepth = cameraNear+texture2D( tDepth, 1.0-uv.yx ).r*rawValueToMeters;
+                    vDepth = viewDepth;
                     
                     mvPosition.xyz *= abs(viewDepth/mvPosition.z);
                     transformed = (inverse(modelViewMatrix)*mvPosition).xyz;
@@ -65,18 +66,33 @@ namespace demo {
                     gl_Position = projectionMatrix * mvPosition;
                     `
                 )
-
-                shader.fragmentShader = `
-                    uniform float rawValueToMeters;
-                `+shader.fragmentShader.replace(
-                    "#include <map_fragment>",
-                    `
-                    #include <map_fragment>
-                    diffuseColor.r *= rawValueToMeters/1.0;
-                    `
-                )
             }
         }
+    }
+
+    function shGetIrradianceAt( normal: THREE.Vector3, shCoefficients: THREE.Vector3[], target: THREE.Color ) {
+
+        // normal is assumed to have unit length
+    
+        const x = normal.x, y = normal.y, z = normal.z
+    
+        // band 0
+        v.copy(shCoefficients[ 0 ]).multiplyScalar( 0.886227 )
+    
+        // band 1
+        v.addScaledVector( shCoefficients[ 1 ], 2.0 * 0.511664 * y )
+        v.addScaledVector( shCoefficients[ 2 ], 2.0 * 0.511664 * z )
+        v.addScaledVector( shCoefficients[ 3 ], 2.0 * 0.511664 * x )
+    
+        // band 2
+        v.addScaledVector( shCoefficients[ 4 ], 2.0 * 0.429043 * x * y )
+        v.addScaledVector( shCoefficients[ 5 ], 2.0 * 0.429043 * y * z )
+        v.addScaledVector( shCoefficients[ 6 ], ( 0.743125 * z * z - 0.247708 ))
+        v.addScaledVector( shCoefficients[ 7 ], 2.0 * 0.429043 * x * z )
+        v.addScaledVector( shCoefficients[ 8 ], 0.429043 * ( x * x - y * y ) )
+    
+        return target.setRGB(v.x, v.y, v.z)
+    
     }
 
     export class DepthSense {
@@ -96,14 +112,14 @@ namespace demo {
         readonly mesh = (()=>{
             const m = new THREE.Mesh(
                 new THREE.PlaneBufferGeometry(1, 1, 200, 200),
-                new DepthPlaneMaterial( this.depthTexture )
+                new DepthPlaneMaterial()
             )
             m.receiveShadow = true
             m.renderOrder = -1
             return m
         })()
 
-        senseDepth( renderer: THREE.WebGLRenderer, frame: XRFrame, camera: THREE.PerspectiveCamera ){            
+        senseDepth( renderer: THREE.WebGLRenderer, frame: XRFrame, camera: THREE.PerspectiveCamera, lightProbe: THREE.LightProbe ){            
             const refSpace = renderer.xr.getReferenceSpace()
             if( 
                 refSpace &&
@@ -137,13 +153,15 @@ namespace demo {
                                 4
                             )
                             this.depthTexture.generateMipmaps = false
-                            this.mesh.material.map = this.depthTexture
+                            this.mesh.material.tDepth.value = this.depthTexture
                             this.mesh.material.needsUpdate = true
                         }
                         this.depthTexture.image.data.set( new Uint16Array(depthInfo.data) )
                         this.depthTexture.needsUpdate = true
                         this.mesh.material.cameraNear.value = camera.near
                         this.mesh.material.rawValueToMeters.value = depthInfo.rawValueToMeters
+                        shGetIrradianceAt( v.set(0,1,0), lightProbe.sh.coefficients, c)
+                        this.mesh.material.opacity = 1-c.getHSL(hsl).l
                     }
                 }
             }
