@@ -35,7 +35,7 @@ var demo;
                     this.isRequesting = true;
                     try {
                         const sessionInit = {
-                            requiredFeatures: ["dom-overlay", "light-estimation", "depth-sensing"],
+                            requiredFeatures: ["dom-overlay", "light-estimation", "depth-sensing", "hit-test"],
                             domOverlay: {
                                 root: this.overlay
                             },
@@ -369,6 +369,7 @@ var demo;
 (function (demo) {
     const e = new THREE.Euler;
     const v1 = new THREE.Vector3;
+    const m = new THREE.Matrix4;
     function loadGltf(url) {
         return new Promise((resolve, reject) => {
             new THREE.GLTFLoader().load(url, gltf => {
@@ -406,8 +407,9 @@ var demo;
             this.arGroup = new THREE.Group;
             this.arCamera = new THREE.PerspectiveCamera();
             this.arStarted = false;
-            this.arGroupPositionSet = 0;
             this.depthSense = new demo.DepthSense();
+            this.arGroupPositionNeedUpdate = true;
+            this.hitTestSourceRequested = false;
             this.renderer = new THREE.WebGLRenderer({
                 canvas: canvas,
                 antialias: true,
@@ -465,21 +467,9 @@ var demo;
             this.onResize();
             this.start();
             const arButton = new demo.ARButton(this.renderer, this.hud, () => {
-                this.scene.getObjectByName("notAr").visible = false;
-                this.scene.add(this.arLight);
-                this.arGroup.visible = true;
-                this.arStarted = true;
-                this.arGroupPositionSet = 5;
-                this.camera.matrixWorld.decompose(this.arGroup.position, this.arGroup.quaternion, this.arGroup.scale);
-                this.arGroup.position.divideScalar(2);
-                this.arCamera.position.setScalar(0);
-                this.arCamera.quaternion.identity();
-                this.arCamera.scale.setScalar(1);
+                this.onArStart();
             }, () => {
-                this.scene.remove(this.arLight);
-                this.scene.getObjectByName("notAr").visible = true;
-                this.arGroup.visible = false;
-                this.arStarted = false;
+                this.onArEnd();
             });
             this.hud.appendChild(arButton.htmlElement);
             arButton.htmlElement.style.padding = "5";
@@ -487,29 +477,86 @@ var demo;
             arButton.htmlElement.style.left = "50%";
             arButton.htmlElement.style.top = "5";
             arButton.htmlElement.style.transform = "translate( -50%, 0 )";
-            this.renderer.setAnimationLoop((_, frame) => {
-                if (frame)
-                    this.depthSense.senseDepth(this.renderer, frame, this.arCamera, this.arLight.lightProbe);
-                if (this.arStarted) {
-                    this.renderer.render(this.scene, this.arCamera);
-                }
-                else {
-                    this.camera.lookAt(0, 0, 0);
-                    this.renderer.render(this.scene, this.camera);
-                }
-                if (this.arGroupPositionSet > 0) {
-                    v1.setFromMatrixColumn(this.arCamera.matrixWorld, 2);
-                    this.arGroup.position.setFromMatrixPosition(this.bellSword.object3D.matrixWorld)
-                        .addScaledVector(v1, 0.3);
-                    --this.arGroupPositionSet;
-                }
+            const controller = this.renderer.xr.getController(0);
+            controller.addEventListener("select", () => {
+                this.arGroupPositionNeedUpdate = true;
             });
+            this.scene.add(controller);
+            this.renderer.setAnimationLoop((_, frame) => {
+                this.render(frame);
+            });
+        }
+        onArStart() {
+            this.scene.getObjectByName("notAr").visible = false;
+            this.scene.add(this.arLight);
+            this.arGroup.visible = true;
+            this.arStarted = true;
+            this.arGroup.position.setScalar(0);
+            this.arCamera.position.setScalar(0);
+            this.arCamera.quaternion.identity();
+            this.arCamera.scale.setScalar(1);
+            this.arGroupPositionNeedUpdate = true;
+            this.hitTestSourceRequested = false;
+        }
+        onArEnd() {
+            this.scene.remove(this.arLight);
+            this.scene.getObjectByName("notAr").visible = true;
+            this.arGroup.visible = false;
+            this.arStarted = false;
+            this.hitTestSource = undefined;
+            this.pivot.position.setScalar(0);
         }
         update(deltaTime) {
             this.time += deltaTime;
             this.pivot.quaternion.setFromEuler(e.set(this.time * Math.PI * 2 / 6, 0, this.time * Math.PI * 2 / 10));
             this.scene.updateMatrixWorld(true);
             this.bellSword.update(deltaTime);
+        }
+        render(frame) {
+            if (frame)
+                this.depthSense.senseDepth(this.renderer, frame, this.arCamera, this.arLight.lightProbe);
+            if (this.arStarted) {
+                this.renderer.render(this.scene, this.arCamera);
+            }
+            else {
+                this.camera.lookAt(0, 0, 0);
+                this.renderer.render(this.scene, this.camera);
+            }
+            this.hitTest(frame);
+        }
+        hitTest(frame) {
+            if (this.arGroupPositionNeedUpdate) {
+                const currentSession = this.renderer.xr.getSession();
+                const refSpace = this.renderer.xr.getReferenceSpace();
+                if (refSpace && currentSession) {
+                    if (!this.hitTestSourceRequested) {
+                        this.hitTestSourceRequested = true;
+                        currentSession.requestReferenceSpace("viewer").then(refSpace => {
+                            if (currentSession.requestHitTestSource) {
+                                currentSession.requestHitTestSource({
+                                    space: refSpace
+                                }).then(source => {
+                                    this.hitTestSource = source;
+                                });
+                            }
+                        });
+                    }
+                    if (this.hitTestSource) {
+                        const results = frame.getHitTestResults(this.hitTestSource);
+                        if (results.length > 0) {
+                            const r = results[0];
+                            const pose = r.getPose(refSpace);
+                            if (pose) {
+                                m.fromArray(pose.transform.matrix);
+                                this.pivot.position.setFromMatrixPosition(m)
+                                    .addScaledVector(v1.setFromMatrixColumn(m, 1), 0.2);
+                                this.arLight.position.copy(this.pivot.position);
+                                this.arGroupPositionNeedUpdate = false;
+                            }
+                        }
+                    }
+                }
+            }
         }
         start() {
             let prevTime = performance.now();
